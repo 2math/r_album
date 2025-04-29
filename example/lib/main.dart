@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -14,10 +15,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  File _file;
-  bool _isSaving;
+  File? _file;
+  bool? _isSaving;
 
-  bool isClickVideo;
+  bool? isClickVideo;
 
   @override
   Widget build(BuildContext context) {
@@ -45,13 +46,13 @@ class _MyAppState extends State<MyApp> {
     return Container(
       margin: EdgeInsets.all(16),
       height: 300.0,
-      child: isClickVideo != null
-          ? isClickVideo
+      child: isClickVideo != null && _file != null
+          ? isClickVideo!
               ? VideoWidget(
-                  file: _file,
+                  file: _file!,
                 )
               : Image.file(
-                  _file,
+                  _file!,
                   fit: BoxFit.fill,
                 )
           : Center(
@@ -59,9 +60,7 @@ class _MyAppState extends State<MyApp> {
                 child: Text("No selected image or video"),
               ),
             ),
-      decoration: isClickVideo != null
-          ? null
-          : BoxDecoration(border: Border.all(width: 1)),
+      decoration: isClickVideo != null ? null : BoxDecoration(border: Border.all(width: 1)),
     );
   }
 
@@ -74,12 +73,11 @@ class _MyAppState extends State<MyApp> {
             tooltip: 'select image from camera',
             icon: Icon(Icons.camera_alt),
             onPressed: () async {
-              var image =
-                  await ImagePicker.pickImage(source: ImageSource.camera);
+              var image = await ImagePicker().pickImage(source: ImageSource.camera);
               if (image != null) {
                 isClickVideo = false;
                 setState(() {
-                  _file = image;
+                  _file = File(image.path);
                 });
               }
             },
@@ -88,12 +86,11 @@ class _MyAppState extends State<MyApp> {
             tooltip: 'select image from gallery',
             icon: Icon(Icons.folder),
             onPressed: () async {
-              var image =
-                  await ImagePicker.pickImage(source: ImageSource.gallery);
+              var image = await ImagePicker().pickImage(source: ImageSource.gallery);
               if (image != null) {
                 isClickVideo = false;
                 setState(() {
-                  _file = image;
+                  _file = File(image.path);
                 });
               }
             },
@@ -112,12 +109,11 @@ class _MyAppState extends State<MyApp> {
             tooltip: 'select video from camera',
             icon: Icon(Icons.videocam),
             onPressed: () async {
-              var video =
-                  await ImagePicker.pickVideo(source: ImageSource.camera);
+              var video = await ImagePicker().pickVideo(source: ImageSource.camera);
               if (video != null) {
                 isClickVideo = true;
                 setState(() {
-                  _file = video;
+                  _file = File(video.path);
                 });
               }
             },
@@ -126,12 +122,11 @@ class _MyAppState extends State<MyApp> {
             tooltip: 'select video from gallery',
             icon: Icon(Icons.folder),
             onPressed: () async {
-              var video =
-                  await ImagePicker.pickVideo(source: ImageSource.gallery);
+              var video = await ImagePicker().pickVideo(source: ImageSource.gallery);
               if (video != null) {
                 isClickVideo = true;
                 setState(() {
-                  _file = video;
+                  _file = File(video.path);
                 });
               }
             },
@@ -144,9 +139,9 @@ class _MyAppState extends State<MyApp> {
   Widget _buildSaveToAlbumButton() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: RaisedButton(
-        color: Colors.blue,
-        textColor: Colors.white,
+      child: ElevatedButton(
+        // color: Colors.blue,
+        // textColor: Colors.white,
         child: Text("Save to album"),
         onPressed: () async {
           setState(() {
@@ -154,11 +149,16 @@ class _MyAppState extends State<MyApp> {
           });
           if (_file != null) {
             if (await canReadStorage()) {
-              bool isSuccess = await RAlbum.saveAlbum(
+              bool? isSuccess = await RAlbum.saveAlbum(
                 "MyTestAlbum",
-                [_file.path, _file.path],
+                [_file!.path],
               );
-              print('保存图片到相册是否成功：$isSuccess');
+              print('SaveToAlbum：$isSuccess');
+              setState(() {
+                _isSaving = false;
+              });
+            } else {
+              print("no permission");
               setState(() {
                 _isSaving = false;
               });
@@ -174,40 +174,41 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<bool> canReadStorage() async {
-    if (Platform.isIOS) return true;
-    var status = await PermissionHandler()
-        .checkPermissionStatus(PermissionGroup.storage);
-    if (status != PermissionStatus.granted) {
-      var future = await PermissionHandler()
-          .requestPermissions([PermissionGroup.storage]);
-      for (final item in future.entries) {
-        if (item.value != PermissionStatus.granted) {
-          return false;
-        }
+    if (Platform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await DeviceInfoPlugin().androidInfo;
+
+      if (androidInfo.version.sdkInt >= 33) {
+        print('requestStoragePermission android 33+: true');
+        return true;
       }
-    } else {
-      return true;
     }
-    return true;
+
+    PermissionStatus permissionResults = await Permission.storage.request();
+
+    print('requestStoragePermission: $permissionResults');
+
+    return permissionResults == PermissionStatus.granted;
   }
 
   Widget _buildCreateAlbumButton() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: RaisedButton(
-        color: Colors.blue,
-        textColor: Colors.white,
+      child: ElevatedButton(
+        // color: Colors.blue,
+        // textColor: Colors.white,
         child: Text("Create a album named MyTestAlbum"),
         onPressed: () async {
           if (await canReadStorage()) {
             setState(() {
               _isSaving = true;
             });
-            bool isSuccess = await RAlbum.createAlbum("MyTestAlbum");
-            print('创建相册是否成功：$isSuccess');
+            bool? isSuccess = await RAlbum.createAlbum("MyTestAlbum");
+            print('CreateAlbum：$isSuccess');
             setState(() {
               _isSaving = false;
             });
+          } else {
+            print("no permission");
           }
         },
       ),

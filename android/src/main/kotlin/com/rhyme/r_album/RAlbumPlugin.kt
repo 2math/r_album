@@ -94,8 +94,10 @@ public class RAlbumPlugin : FlutterPlugin, MethodCallHandler {
 
                     inPut.close()
                     resultPaths.add(itemFile.absolutePath)
-                    handler.post {
-                        context!!.sendBroadcast(Intent(ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(itemFile)))
+                    if(context != null) {
+                        handler.post {
+                            context!!.sendBroadcast(Intent(ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(itemFile)))
+                        }
                     }
                 }
                 handler.post {

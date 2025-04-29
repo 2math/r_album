@@ -4,8 +4,8 @@ version: 0.1.4
 homepage: https://github.com/rhymelph/r_album
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
-  flutter: ">=1.12.0"
+  sdk: '>=3.6.0 <4.0.0'
+  flutter: ">=3.17.0"
 
 dependencies:
   flutter:
