@@ -13,7 +13,6 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.io.File
 import java.io.FileInputStream
 import java.lang.Exception
@@ -21,25 +20,17 @@ import kotlin.concurrent.thread
 
 /** RAlbumPlugin */
 const val methodName: String = "com.rhyme_lph/r_album"
-var context: Context? = null
 
 public class RAlbumPlugin : FlutterPlugin, MethodCallHandler {
     private val handler: Handler = Handler()
+    private lateinit var channel: MethodChannel
+    private var context: Context? = null
+
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         context = flutterPluginBinding.applicationContext
-        val channel = MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), methodName)
-        channel.setMethodCallHandler(RAlbumPlugin())
+        channel = MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), methodName)
+        channel.setMethodCallHandler(this)
 
-    }
-
-    companion object {
-        @JvmStatic
-        fun registerWith(registrar: Registrar) {
-            context = registrar.activity()
-
-            val channel = MethodChannel(registrar.messenger(), methodName)
-            channel.setMethodCallHandler(RAlbumPlugin())
-        }
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
@@ -130,6 +121,6 @@ public class RAlbumPlugin : FlutterPlugin, MethodCallHandler {
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         context = null
-
+        channel.setMethodCallHandler(null)
     }
 }
